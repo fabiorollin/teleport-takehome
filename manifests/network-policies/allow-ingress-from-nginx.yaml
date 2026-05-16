@@ -1,0 +1,25 @@
+# Allow ingress traffic to the nginx pods on port 80 from any pod in the
+# ingress-nginx namespace.
+#
+# The namespaceSelector matches the well-known label
+# 'kubernetes.io/metadata.name' that Kubernetes automatically applies to
+# every namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-nginx-controller
+  namespace: nginx-app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80

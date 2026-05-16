@@ -1,0 +1,19 @@
+# Binds the user 'alice' (CN=alice from her CSR-signed cert) to the
+# nginx-viewer Role.
+#
+# The subject 'kind: User name: alice' is matched against the CN of the
+# client certificate presented at the API server. No User object exists in
+# Kubernetes — the identity is the cert itself.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: alice-viewer
+  namespace: nginx-app
+subjects:
+  - kind: User
+    name: alice
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: nginx-viewer
+  apiGroup: rbac.authorization.k8s.io

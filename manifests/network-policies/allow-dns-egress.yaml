@@ -1,0 +1,27 @@
+# Allow DNS egress to CoreDNS in kube-system.
+#
+# Without this policy, the default-deny breaks ALL hostname resolution in
+# nginx-app — including kubectl exec, health probes that resolve service
+# DNS, and any future workload that needs to reach external systems by name.
+#
+# This is the most common NetworkPolicy footgun. Always pair default-deny
+# with an explicit DNS allow.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: nginx-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -1,0 +1,33 @@
+# Full namespace admin for the Nginx workload in nginx-app.
+# Bound to user 'bob' via rolebinding-bob-admin.yaml.
+#
+# Includes everything the viewer can do, plus create/update/patch/delete on
+# workload resources, ingresses, NetworkPolicies, and cert-manager Certificates.
+#
+# Deliberately does NOT include:
+#   - secrets (write) — would let the admin exfiltrate the TLS cert key
+#   - rolebindings — admins cannot grant themselves more access
+#   - any apiGroup outside the application's scope
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: nginx-app
+  name: nginx-admin
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "services", "configmaps", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Read-only on secrets so the admin can debug TLS issues but cannot
+  # extract the private key contents in bulk.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]

@@ -1,0 +1,33 @@
+# Generated user credentials — never commit
+out/
+*.key
+*.csr
+*.crt
+!**/ca.crt
+
+# Local kubeconfigs
+*.kubeconfig
+.kube/config
+
+# AWS credentials
+.aws/
+credentials
+aws-credentials*
+*.pem
+
+# Terraform state (if you add it later)
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+Thumbs.db
+
+# Flux bootstrap secrets (in case bootstrap leaves them around)
+**/flux-system/gotk-secret.yaml

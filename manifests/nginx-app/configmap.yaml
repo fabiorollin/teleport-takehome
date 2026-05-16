@@ -1,0 +1,50 @@
+# Custom landing page served by the Nginx pods.
+# Mounted into /usr/share/nginx/html in the Deployment.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-content
+  namespace: nginx-app
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <title>Teleport Take-Home — Nginx via CSR-Authenticated RBAC</title>
+      <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px;
+               margin: 4em auto; color: #222; line-height: 1.6; padding: 0 1em; }
+        h1 { color: #1f2d3d; }
+        code { background: #eef; padding: 2px 6px; border-radius: 4px;
+               font-family: 'SF Mono', Consolas, monospace; font-size: 0.9em; }
+        .meta { color: #888; font-size: 0.85em; margin-top: 3em; }
+        a { color: #1462aa; }
+      </style>
+    </head>
+    <body>
+      <h1>Nginx — deployed by a CSR-authenticated user</h1>
+
+      <p>This page is served by an Nginx pod in the <code>nginx-app</code>
+      namespace of a 3-node <code>kubeadm</code> cluster on AWS EC2.</p>
+
+      <p>The Deployment in this cluster was applied by the <code>bob</code>
+      user, whose access is governed by a per-user X.509 certificate signed
+      by the cluster CA via the Kubernetes
+      <a href="https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/">CertificateSigningRequest</a>
+      API. Bob's RBAC permissions are namespace-scoped to <code>nginx-app</code>.</p>
+
+      <p>TLS is provisioned by
+      <a href="https://cert-manager.io">cert-manager</a> using a self-signed
+      <code>ClusterIssuer</code>. Network traffic into this pod is constrained
+      by <code>NetworkPolicy</code> — only the NGINX Ingress controller can
+      reach it on port 80, and DNS egress is the only outbound traffic
+      permitted.</p>
+
+      <p>The full repository, including the build scripts, design document,
+      and a discussion of where this pattern breaks at scale, is on GitHub.</p>
+
+      <p class="meta">Submitted for the Teleport Professional Services
+      take-home — Fabio Rollin, May 2026.</p>
+    </body>
+    </html>

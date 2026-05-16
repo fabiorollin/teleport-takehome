@@ -1,0 +1,14 @@
+# Default-deny all ingress and egress in the nginx-app namespace.
+# Pods get NO traffic until another NetworkPolicy explicitly allows it.
+#
+# Subsequent policies in this directory layer on the allows.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: nginx-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

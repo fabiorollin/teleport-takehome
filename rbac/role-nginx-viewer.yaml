@@ -1,0 +1,23 @@
+# Read-only access to the Nginx workload in the nginx-app namespace.
+# Bound to user 'alice' via rolebinding-alice-viewer.yaml.
+#
+# Least privilege at the verb level: only get/list/watch.
+# No wildcard verbs, no escalation paths.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: nginx-app
+  name: nginx-viewer
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificaterequests"]
+    verbs: ["get", "list", "watch"]

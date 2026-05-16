@@ -1,0 +1,14 @@
+# Self-signed ClusterIssuer for cert-manager.
+#
+# cert-manager generates an internal CA and uses it to sign certificates
+# requested by Certificate resources in any namespace. Browser-untrusted by
+# design — the demo accepts the warning, then loads.
+#
+# Production path documented in design.md (Let's Encrypt + DNS-01 challenge
+# against a real domain).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-cluster-issuer
+spec:
+  selfSigned: {}

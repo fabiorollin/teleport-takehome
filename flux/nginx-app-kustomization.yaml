@@ -1,0 +1,22 @@
+# Flux Kustomization — tells Flux to reconcile the Nginx application
+# manifests at manifests/nginx-app/ from the same Git repository it was
+# bootstrapped from.
+#
+# Copy this file into clusters/demo/ (the Flux bootstrap path) and commit.
+# Flux's source-controller will fetch the next commit and the
+# kustomize-controller will apply the manifests within the interval below.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: nginx-app
+  namespace: flux-system
+spec:
+  interval: 1m
+  path: ./manifests/nginx-app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  targetNamespace: nginx-app
+  wait: true
+  timeout: 2m

@@ -1,0 +1,34 @@
+# Ingress with TLS provisioned by cert-manager.
+#
+# The cert-manager annotation triggers cert-manager to issue a Certificate
+# named after the secretName below, signed by the named ClusterIssuer, and
+# stored in the named Secret. The NGINX Ingress controller mounts that Secret
+# as the TLS cert for the listed hosts.
+#
+# The host 'nginx.demo.local' must resolve to the master node's public IP.
+# Add an entry to your local /etc/hosts (or Windows hosts file):
+#   <master-public-ip>  nginx.demo.local
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  namespace: nginx-app
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - nginx.demo.local
+      secretName: nginx-tls
+  rules:
+    - host: nginx.demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  name: http

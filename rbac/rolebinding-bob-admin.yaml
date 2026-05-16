@@ -1,0 +1,15 @@
+# Binds the user 'bob' (CN=bob from his CSR-signed cert) to the nginx-admin
+# Role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bob-admin
+  namespace: nginx-app
+subjects:
+  - kind: User
+    name: bob
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: nginx-admin
+  apiGroup: rbac.authorization.k8s.io
