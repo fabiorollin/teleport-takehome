@@ -1,0 +1,30 @@
+# Cluster-wide admin binding for user `admin`.
+#
+# This binding differs from alice's and bob's in two important ways:
+#
+# 1. kind: ClusterRoleBinding (not RoleBinding)
+#    Applies cluster-wide, not scoped to a single namespace. The user can
+#    operate on resources in every namespace AND on cluster-scoped resources
+#    like nodes, namespaces, ClusterRoles, etc.
+#
+# 2. roleRef: ClusterRole cluster-admin
+#    cluster-admin is a built-in ClusterRole shipped with Kubernetes. It
+#    grants `*` verbs on `*` resources in `*` apiGroups — i.e., unrestricted
+#    superuser access. There is no more permissive role in the cluster.
+#
+# As with alice and bob, the subject `name: admin` is a string matched
+# against the CN of an authenticated client cert. The user is "real" the
+# moment a cert with CN=admin signed by the cluster CA is presented to the
+# API server.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-cluster-admin
+subjects:
+  - kind: User
+    name: admin
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

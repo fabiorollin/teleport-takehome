@@ -189,6 +189,8 @@ kubectl apply -f manifests/cluster-issuer.yaml
 
 - **`rolebinding-bob-admin.yaml`** — same shape, binds `bob` to `nginx-admin`.
 
+- **`clusterrolebinding-admin.yaml`** — binds the user `admin` to the built-in `cluster-admin` ClusterRole. Two important contrasts with alice's and bob's bindings: this is a `ClusterRoleBinding` (not `RoleBinding`), so it applies cluster-wide rather than within a single namespace; and the `roleRef` points to a `ClusterRole`, not a `Role`. `cluster-admin` is Kubernetes' built-in superuser — `*` verbs on `*` resources in `*` apiGroups. This binding is what makes admin able to operate on cluster-scoped resources (nodes, namespaces) and inside namespaces the namespace-scoped users can't touch (`kube-system`).
+
 This separation between authentication (the cert) and authorization (the RoleBinding) is deliberate. It matches the production pattern of "create the policy first, then issue credentials that grant access under that policy"
 
 #### What's in `manifests/cluster-issuer.yaml`
@@ -221,11 +223,12 @@ The Nginx app (`manifests/nginx-app/`) and the NetworkPolicies (`manifests/netwo
 
 The script `create-user.sh` generates credentials for a Kubernetes user using the cluster's own CA with no external IdP, no shared password.
 
-Run it twice, once per user:
+Run it three times — once for each user. The script only handles credential issuance; the RoleBindings that grant alice/bob their permissions are already in `rbac/` and were applied in step 7. The admin user binds to the built-in `cluster-admin` ClusterRole via `rbac/clusterrolebinding-admin.yaml`, also applied in step 7.
 
 ```bash
 ./scripts/create-user.sh alice
 ./scripts/create-user.sh bob
+./scripts/create-user.sh admin
 ./scripts/test-rbac.sh
 ```
 
@@ -320,4 +323,4 @@ Called out honestly in `design.md`, but the headline ones:
 
 ## Author
 
-Fabio Rollin — submitted for the Teleport Professional Services take-home, May 2026.
+Fabio Rollin — submitted for the Teleport Professional Services take-home, May 2026.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
