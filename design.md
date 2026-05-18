@@ -152,7 +152,7 @@ In Flux's model, **the repo is the source of truth**. Drift in the cluster is re
 
 | Pain | Why it matters in production | What an enterprise access-management platform adds |
 |---|---|---|
-| **Certificate lifecycle is manual** | When does Alice's cert expire? Who renews it? At scale, teams build cert-tracking systems — operational debt nobody asked for. | Short-lived certs auto-renewed per session |
+| **Certificate lifecycle is manual** | When does Alice's cert expire? Who renews it? At scale, teams build cert-tracking systems operational debt nobody asked for. | Short-lived certs auto-renewed per session |
 | **No central revocation** | Bob leaves the company; his kubeconfig still works until expiry. Kubernetes has no CRL or OCSP. | Lock the user → access cuts instantly across all clusters |
 | **Kubeconfig sprawl** | Files on laptops, in Slack, in backups, in dotfiles. A 30-day cert in 50 places is a 30-day window. | No kubeconfig stored on disk; cert ephemeral per session |
 | **Manual approval workflow** | Every new user requires admin to run `kubectl certificate approve`, every cluster, every time. | SSO with claim-to-role mapping and joiners provisioned automatically |
@@ -164,7 +164,7 @@ In Flux's model, **the repo is the source of truth**. Drift in the cluster is re
 | **No session recording** | `kubectl exec` into a pod isn't captured for forensic review | Every exec is recorded and replayable |
 | **No network-level isolation for the API server** | The API server must be reachable from operator networks. Either expose 6443 or run a VPN. | Proxy fronts everything, agents dial out, no inbound ports |
 
-The native pattern shown in this lab is **the floor** of what's possible — table stakes for a small team on one cluster. Production-grade access management is the ceiling, and the gap between them is operational debt that compounds with cluster count and team size.
+The native pattern shown in this lab is **the floor** of what's possible table stakes for a small team on one cluster. Production-grade access management is the ceiling, and the gap between them is operational debt that compounds with cluster count and team size.
 
 ## What I'd add in production
 

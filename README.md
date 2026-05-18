@@ -15,7 +15,7 @@ manifests/      The Nginx app + the self-signed cert-manager ClusterIssuer
                 + three NetworkPolicies that lock down the namespace.
 flux/           The Flux Kustomization that reconciles manifests/nginx-app/
                 from this repo.
-clusters/demo/  Created by `flux bootstrap` — contains Flux's own config
+clusters/demo/  Created by `flux bootstrap` contains Flux's own config
                 (gotk-components, gotk-sync, kustomization).
 design.md       Architecture, why I picked each piece, the pluses-and-minuses
                 analysis, and known limitations.
@@ -79,7 +79,7 @@ On the master only:
 
 What `kubeadm init` is doing under the hood:
 
-- Generates the cluster PKI in `/etc/kubernetes/pki/` — including the cluster CA we'll use later to sign user certificates
+- Generates the cluster PKI in `/etc/kubernetes/pki/` including the cluster CA we'll use later to sign user certificates
 - Writes static pod manifests for the control plane (apiserver, controller-manager, scheduler, etcd) into `/etc/kubernetes/manifests/`. kubelet watches that directory and runs whatever's in it.
 - Sets up the admin kubeconfig at `/etc/kubernetes/admin.conf` (the script copies this into your `~/.kube/config`)
 - Creates a bootstrap token for workers to join
@@ -98,7 +98,7 @@ The join command is saved on the master at `/tmp/kubeadm-join.cmd`. Get it:
 cat /tmp/kubeadm-join.cmd
 ```
 
-SSH into each worker and run that command with sudo. The `02-join-worker.sh` script is just a thin wrapper that takes the command as an argument — you can use it or paste the kubeadm command directly:
+SSH into each worker and run that command with sudo. The `02-join-worker.sh` script is just a thin wrapper that takes the command as an argument you can use it or paste the kubeadm command directly:
 
 ```bash
 # On each worker:
@@ -107,7 +107,7 @@ sudo kubeadm join 172.31.16.94:6443 \
   --discovery-token-ca-cert-hash sha256:<hash>
 ```
 
-Once both workers join, `kubectl get nodes` from the master shows all three as `Ready` within about 30 seconds — assuming Calico is already installed (step 5).
+Once both workers join, `kubectl get nodes` from the master shows all three as `Ready` within about 30 seconds assuming Calico is already installed (step 5).
 
 ### 5. Install Calico (`03-install-calico.sh`)
 
@@ -123,7 +123,7 @@ A couple of things worth knowing here:
 
 **Why install Calico before joining workers?** Until a CNI is installed, CoreDNS pods stay `Pending` (they have no network namespace to live in) and worker `kubelet`s can't bring pods up either. If you join workers before installing Calico, they show `NotReady` and you sit there confused. The order is: init master → install CNI → join workers.
 
-**The AWS source/destination check gotcha.** This bit me on the first build. cert-manager's validating webhook was timing out when called from the apiserver across nodes. The root cause: AWS drops packets where the source IP doesn't match the ENI's IP. Calico in same-subnet mode uses native routing — so pod IPs (192.168.x.x) are the source IPs on packets leaving the node, but the ENI has a 172.31.x.x IP. AWS drops them.
+**The AWS source/destination check gotcha.** This bit me on the first build. cert-manager's validating webhook was timing out when called from the apiserver across nodes. The root cause: AWS drops packets where the source IP doesn't match the ENI's IP. Calico in same-subnet mode uses native routing so pod IPs (192.168.x.x) are the source IPs on packets leaving the node, but the ENI has a 172.31.x.x IP. AWS drops them.
 
 The fix is to disable source/dest check on all three EC2 instances:
 
@@ -158,21 +158,19 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/${NG
 kubectl -n ingress-nginx wait --for=condition=Available deployment/ingress-nginx-controller --timeout=300s
 ```
 
-The key word in that URL is `baremetal`. ingress-nginx ships several "provider" variants — `cloud`, `aws`, `gce`, `baremetal`. They mostly differ in how the controller's Service is exposed: `cloud` provisions a LoadBalancer (depends on a cloud controller), `baremetal` uses NodePort. Since kubeadm doesn't bring a cloud-controller manager along, NodePort is what works.
-
-After install, the controller's Service has two NodePorts — one for HTTP (80 → 3xxxx) and one for HTTPS (443 → 3yyyy):
+After install, the controller's Service has two NodePorts: one for HTTP (80 → 3xxxx) and one for HTTPS (443 → 3yyyy):
 
 ```bash
 kubectl -n ingress-nginx get svc ingress-nginx-controller
 ```
 
-The HTTPS NodePort is what you'll hit in the browser — it's randomly assigned at install time and different on every fresh cluster. Save the number.
+The HTTPS NodePort is what you'll hit in the browser it's randomly assigned at install time and different on every fresh cluster. Save the number.
 
 **Why self-signed ClusterIssuer instead of Let's Encrypt?** Reproducibility. A self-signed issuer needs nothing external and cert-manager generates its own CA and signs certs with it. Let's Encrypt would require owning a real domain and giving cert-manager Route 53 IAM credentials so it can complete the DNS-01 challenge. For a take-home that anyone should be able to rebuild from a fresh AWS account, self-signed wins. The production path with Let's Encrypt is documented in `design.md`.
 
 ### 7. Apply RBAC and the cert-manager issuer (as cluster admin)
 
-This is the step where the cluster admin lays down the **safety rails** — the namespace, the Roles that define what users can do, the bindings between users and Roles, and the cluster-wide cert-manager issuer that the app's Ingress will later reference. Nothing in this step deploys the actual application; that comes in step 9 and is deliberately done as a non-admin user.
+This is the step where the cluster admin lays down the **safety rails** the namespace, the Roles that define what users can do, the bindings between users and Roles, and the cluster-wide cert-manager issuer that the app's Ingress will later reference. Nothing in this step deploys the actual application; that comes in step 9 and is deliberately done as a non-admin user.
 
 ```bash
 kubectl apply -f rbac/
@@ -217,7 +215,7 @@ If `READY=False`, cert-manager's webhook isn't responding. Most often that's a c
 
 #### What's intentionally NOT applied yet
 
-The Nginx app (`manifests/nginx-app/`) and the NetworkPolicies (`manifests/network-policies/`) are not applied here. They get applied in step 9 using `bob`'s kubeconfig — the whole demo point of this exercise is that a non-admin user, authenticated via a CSR-signed cert, can deploy a real workload end to end. Doing that work as cluster admin would defeat the purpose.
+The Nginx app (`manifests/nginx-app/`) and the NetworkPolicies (`manifests/network-policies/`) are not applied here. They get applied in step 9 using `bob`'s kubeconfig the whole demo point of this exercise is that a non-admin user, authenticated via a CSR-signed cert, can deploy a real workload end to end. Doing that work as cluster admin would defeat the purpose.
 
 ### 8. Onboard the demo users via CSR
 
@@ -285,7 +283,7 @@ flux bootstrap github \
 
 Flux installs its four controllers in the `flux-system` namespace and commits its own config to `clusters/demo/flux-system/` in this repo. The `clusters/demo/nginx-app.yaml` Kustomization (already in the repo) tells Flux to reconcile `manifests/nginx-app/` into the cluster.
 
-Once it's running, `flux get kustomizations` shows both `flux-system` (Flux managing itself) and `nginx-app` (Flux managing the workload). Edit `manifests/nginx-app/deployment.yaml` in Git, commit, push, and within about a minute Flux applies the change. Conversely, scale the deployment manually with `kubectl scale` — Flux will revert it on the next reconciliation pass. Git is the source of truth.
+Once it's running, `flux get kustomizations` shows both `flux-system` (Flux managing itself) and `nginx-app` (Flux managing the workload). Edit `manifests/nginx-app/deployment.yaml` in Git, commit, push, and within about a minute Flux applies the change. Conversely, scale the deployment manually with `kubectl scale` Flux will revert it on the next reconciliation pass. Git is the source of truth.
 
 ## Validation
 
@@ -303,11 +301,11 @@ curl -k --resolve nginx.demo.local:<NodePort>:127.0.0.1 \
 
 ## Security notes
 
-- `out/` is gitignored — generated user keys and kubeconfigs never leave the operator's machine. The Roles use **no `*` verbs anywhere**; every verb is explicit.
+- `out/` is gitignored generated user keys and kubeconfigs never leave the operator's machine. The Roles use **no `*` verbs anywhere**; every verb is explicit.
 - All user certificates are issued with a 30-day TTL (`expirationSeconds: 2592000` in the script). Past that, you re-onboard.
 - NetworkPolicy enforces default-deny in `nginx-app`; only the Ingress controller can reach app pods on port 80, only DNS egress is permitted.
 - Self-signed TLS is intentional for this lab. The Let's Encrypt + DNS-01 production path is documented in `design.md` along with the trade-off.
-- SSH is open to 0.0.0.0/0 on these instances for operator convenience during the lab — production would use SSM Session Manager, an identity-aware proxy, or Teleport itself.
+- SSH is open to 0.0.0.0/0 on these instances for operator convenience during the lab production would use SSM Session Manager, an identity-aware proxy, or Teleport itself.
 
 ## Known limitations
 
