@@ -4,8 +4,6 @@
 
 A 3-node Kubernetes cluster deployed via `kubeadm` on AWS EC2, demonstrating native Kubernetes authentication and authorization using the `CertificateSigningRequest` API. The cluster runs a TLS-secured Nginx application deployed by a non-admin user, with NetworkPolicy isolation and Flux-based GitOps reconciliation.
 
-This exercise demonstrates not just that the stack *works*, but that the operator understands its **operational trade-offs at scale** — particularly around user lifecycle, certificate management, and audit. The pluses-and-minuses analysis (below) is the most important part of this document.
-
 ## Architecture
 
 ```
@@ -50,7 +48,7 @@ This exercise demonstrates not just that the stack *works*, but that the operato
 
 ### Kubernetes installation: kubeadm
 
-The take-home requires kubeadm — no wrappers. Beyond compliance: kubeadm produces an idiomatic cluster. Static control-plane pods live in `/etc/kubernetes/manifests/`, the PKI lives in `/etc/kubernetes/pki/`, the admin kubeconfig is at `/etc/kubernetes/admin.conf`. Anyone debugging this cluster finds what they expect.
+The take-home requires kubeadm, no wrappers. Beyond compliance: kubeadm produces an idiomatic cluster. Static control-plane pods live in `/etc/kubernetes/manifests/`, the PKI lives in `/etc/kubernetes/pki/`, the admin kubeconfig is at `/etc/kubernetes/admin.conf`.
 
 ### CNI: Calico (chosen over Flannel)
 
@@ -64,19 +62,19 @@ Installed via the Tigera operator (`tigera-operator.yaml` + `custom-resources.ya
 
 A bare-metal kubeadm cluster has no cloud-managed `LoadBalancer` service. Two real options:
 
-- **MetalLB** — gives you actual `LoadBalancer` service types via L2 announcement
-- **NodePort** — simpler, no extra component
+- MetalLB — gives you actual `LoadBalancer` service types via L2 announcement
+- NodePort — simpler, no extra component
 
-**NodePort** was chosen for demo simplicity. The master's public IP plus the NodePort port = a reachable endpoint. In production, MetalLB or a cloud LB is the right answer.
+NodePort was chosen for demo simplicity. The master's public IP plus the NodePort port = a reachable endpoint. In production, MetalLB or a cloud LB is the right answer.
 
 ### TLS issuance: cert-manager + self-signed `ClusterIssuer`
 
 cert-manager is the requirement. For the issuer:
 
-- **Self-signed `ClusterIssuer`** — works anywhere, no DNS dependency, reproducible from a fresh AWS account in <30 minutes. Cost: browser warnings (the CA isn't in any trust store).
-- **Let's Encrypt via DNS-01** — produces publicly-trusted certs, but requires a real domain name + Route 53 IAM credentials in the cluster.
+- Self-signed `ClusterIssuer` — works anywhere, no DNS dependency, reproducible from a fresh AWS account in <30 minutes. Cost: browser warnings (the CA isn't in any trust store).
+- Let's Encrypt via DNS-01 — produces publicly-trusted certs, but requires a real domain name + Route 53 IAM credentials in the cluster.
 
-Self-signed was chosen to preserve **rebuild discipline**. Anyone validating this submission can do it without owning a domain. The Let's Encrypt path is documented in "What I'd add in production."
+Self-signed was chosen to preserve rebuild discipline. Anyone validating this submission can do it without owning a domain. The Let's Encrypt path is documented in "What I'd add in production."
 
 ### RBAC: namespace-scoped Roles with CN-based subjects
 
@@ -108,9 +106,9 @@ The third policy is non-obvious but essential — without it, the default-deny b
 
 ### GitOps: Flux v2
 
-Flux was chosen over ArgoCD because the author operates Flux in production at IPC Systems. The repo's `manifests/nginx-app/` directory is reconciled by Flux's `kustomize-controller`. `flux bootstrap github` installs the controllers and commits its config to `clusters/demo/`.
+The repo's `manifests/nginx-app/` directory is reconciled by Flux's `kustomize-controller`. `flux bootstrap github` installs the controllers and commits its config to `clusters/demo/`.
 
-In Flux's model, **the repo is the source of truth**. Drift in the cluster is reverted on the next reconciliation. This is the same operating pattern used to manage hundreds of customer Kubernetes clusters at IPC.
+In Flux's model, **the repo is the source of truth**. Drift in the cluster is reverted on the next reconciliation. 
 
 ## Security model
 
@@ -122,7 +120,7 @@ In Flux's model, **the repo is the source of truth**. Drift in the cluster is re
 
 **Authorization:**
 - Two namespace-scoped Roles, explicit verbs, no wildcards
-- All users are namespace-scoped — no ClusterRoleBindings outside the standard kubeadm defaults
+- All users are namespace-scoped, no ClusterRoleBindings outside the standard kubeadm defaults
 - The `kubectl auth can-i` matrix is verified end-to-end by `scripts/test-rbac.sh`
 
 **Network:**
@@ -138,15 +136,15 @@ In Flux's model, **the repo is the source of truth**. Drift in the cluster is re
 
 **Operator access:**
 - The cluster admin's kubeconfig (`/etc/kubernetes/admin.conf`) is root-equivalent and lives only on the master node
-- For day-to-day operation, an operator would create their own scoped user — not use admin.conf
+- For day-to-day operation, an operator would create their own scoped user not use admin.conf
 
 ## Pluses and minuses — operating native Kubernetes RBAC at scale
 
 ### Pluses
 
-- **Standards-based** — X.509 client authentication is well-understood, widely tooled, and uses the cluster's own CA — no external dependencies
-- **Strong cryptographic identity** — certificates cannot be forged without compromising the cluster CA
-- **Works in air-gapped or offline environments** — no IdP reachability required
+- **Standards-based** — X.509 client authentication is well-understood, widely tooled, and uses the cluster's own CA, no external dependencies
+- **Strong cryptographic identity**  certificates cannot be forged without compromising the cluster CA
+- **Works in air-gapped or offline environments**  no IdP reachability required
 - **Audit log captures every API call** with the cert CN as the subject
 - **Free** — built into Kubernetes, no extra software to deploy
 
@@ -157,14 +155,14 @@ In Flux's model, **the repo is the source of truth**. Drift in the cluster is re
 | **Certificate lifecycle is manual** | When does Alice's cert expire? Who renews it? At scale, teams build cert-tracking systems — operational debt nobody asked for. | Short-lived certs auto-renewed per session |
 | **No central revocation** | Bob leaves the company; his kubeconfig still works until expiry. Kubernetes has no CRL or OCSP. | Lock the user → access cuts instantly across all clusters |
 | **Kubeconfig sprawl** | Files on laptops, in Slack, in backups, in dotfiles. A 30-day cert in 50 places is a 30-day window. | No kubeconfig stored on disk; cert ephemeral per session |
-| **Manual approval workflow** | Every new user requires admin to run `kubectl certificate approve`, every cluster, every time. | SSO with claim-to-role mapping — joiners provisioned automatically |
-| **No SSO integration** | Disconnected from the corporate IdP (Okta, Entra, AD FS). Joiner/mover/leaver is manual. | OIDC / SAML connector — identity flows from the IdP |
+| **Manual approval workflow** | Every new user requires admin to run `kubectl certificate approve`, every cluster, every time. | SSO with claim-to-role mapping and joiners provisioned automatically |
+| **No SSO integration** | Disconnected from the corporate IdP (Okta, Entra, AD FS). Joiner/mover/leaver is manual. | OIDC / SAML connector, identity flows from the IdP |
 | **No MFA** | Possession of the kubeconfig file is sufficient authentication | Per-session MFA, WebAuthn, hardware key touch |
 | **Audit shows cert CN, not human identity** | Logs say `user=bob`, but who is "bob"? Two engineers named Bob is not hypothetical. | Audit log carries human identity (email, employee ID) from SSO claims through every action |
 | **No just-in-time elevation** | A user is either viewer or admin permanently. Privilege escalation requires a new RoleBinding. | Access Requests with TTL — request admin for 4h, auto-expire, full audit |
 | **Per-cluster effort** | All of the above repeats for every cluster | One control plane fronts dozens of K8s clusters |
 | **No session recording** | `kubectl exec` into a pod isn't captured for forensic review | Every exec is recorded and replayable |
-| **No network-level isolation for the API server** | The API server must be reachable from operator networks. Either expose 6443 or run a VPN. | Proxy fronts everything — agents dial out, no inbound ports |
+| **No network-level isolation for the API server** | The API server must be reachable from operator networks. Either expose 6443 or run a VPN. | Proxy fronts everything, agents dial out, no inbound ports |
 
 The native pattern shown in this lab is **the floor** of what's possible — table stakes for a small team on one cluster. Production-grade access management is the ceiling, and the gap between them is operational debt that compounds with cluster count and team size.
 
